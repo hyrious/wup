@@ -1,0 +1,55 @@
+import { readFile } from 'node:fs/promises'
+
+interface LoadContext {
+  conditions: string[]
+  format?: string | null
+  importAssertions: Record<string, string>
+}
+
+interface LoadFn {
+  (specifier: string, context: LoadContext): Promise<LoadResult>
+}
+
+interface LoadResult {
+  format: 'builtin' | 'commonjs' | 'json' | 'module' | 'wasm'
+  shortCircuit?: boolean
+  source: string | ArrayBuffer | Uint8Array
+  responseURL?: string
+}
+
+export async function load(url: string, context: LoadContext, nextLoad: LoadFn): Promise<LoadResult> {
+  const result = await nextLoad(url, context)
+  if (result.format === 'commonjs') {
+    result.source ??= await readFile(new URL(result.responseURL ?? url), 'utf8')
+  }
+
+  if (result.format === 'commonjs' || result.format === 'module') {
+    result.source = patch(url, result.source as string)
+  }
+
+  return result
+}
+
+function patch(url: string, source: string | ArrayBuffer | Uint8Array): string | ArrayBuffer | Uint8Array {
+  if (!/node_modules[\\/]rollup-plugin-dts/.test(url)) return source
+  if (source instanceof Uint8Array || source instanceof ArrayBuffer) source = new TextDecoder().decode(source)
+
+  source = source.replaceAll('ts.createCompilerHost(', 'createCompilerHost(')
+  source += `
+/** --- patched by @hyrious/wup --- */
+function createCompilerHost(compilerOptions, setParentNodes = false) {
+  const host = ts.createCompilerHost(compilerOptions, setParentNodes);
+  host.readFile = readAndMangleComments;
+  return host;
+}
+function readAndMangleComments(name) {
+  let file = ts.sys.readFile(name);
+  if (file && !name.includes('node_modules'))
+    file = file.replace(/(?<=^|\\n)(?:([ \\t]*)\\/\\/\\/.*\\n)+/g, (comment, space) => {
+      return \`\${space}/**\\n\${space}\${comment.slice(space.length).replace(/\\/\\/\\/ ?/g, " * ")}\${space} */\\n\`;
+    });
+  return file;
+}
+`
+  return source
+}
