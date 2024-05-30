@@ -253,6 +253,7 @@ const get_config_for_module: GetConfig = (options, config) => {
       replace({
         preventAssignment: true,
         values: {
+          __DEV__: 'process.env.NODE_ENV !== "production"',
           __VERSION__: JSON.stringify(config.version),
         }
       }),

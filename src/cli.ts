@@ -1,8 +1,6 @@
 import sade from 'sade'
 import { register } from 'node:module'
 
-declare const __VERSION__: string
-
 const wup = sade('@hyrious/wup')
 
 wup.version(__VERSION__)

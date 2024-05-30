@@ -14,8 +14,9 @@
   "types": "dist/index.d.ts",
   "bin": "dist/cli.js",
   "files": [
+    "src",
     "dist",
-    "src"
+    "client.d.ts"
   ],
   "engines": {
     "node": ">=20.8"
