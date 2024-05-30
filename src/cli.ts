@@ -8,6 +8,8 @@ wup.version(__VERSION__)
    .example('')
 
 wup.command('build', 'Build the TypeScript library', { default: true })
+   .option('--src', 'Source directory', './src')
+   .option('--dist', 'Distination directory', './dist')
    .action(async function patch_and_build(args) {
       if (__VERSION__) register('./register.js', import.meta.url)
       const { build } = await import('./index.js')

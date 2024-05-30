@@ -13,6 +13,10 @@ import dts from 'rollup-plugin-dts'
 import esbuild, { type Options as EsbuildOptions } from 'rollup-plugin-esbuild'
 
 export interface BuildOptions {
+  /// Source directory, default is `"./src"`.
+  src?: string
+  /// Distination directory, default is `"./dist"`.
+  dist?: string
   /// Additional entry points.
   _?: string[]
   /// Path to the config file.
@@ -22,9 +26,12 @@ export interface BuildOptions {
 }
 
 export const build = async (options: BuildOptions) => {
+  const src = options.src || './src'
+  const dist = options.dist || './dist'
+
   let config = await resolve_config(options)
 
-  await rm('./dist', { recursive: true, force: true })
+  await rm(dist, { recursive: true, force: true })
 
   let { entry_points } = config
 
@@ -38,26 +45,26 @@ export const build = async (options: BuildOptions) => {
     } else {
       rollup_options = rollup_types ||= get_config_for_types(options, config);
     }
-    let input = get_source(entry)
+    let input = get_source(entry, src, dist)
     if (!(rollup_options.input as string[]).includes(input)) {
       (rollup_options.input as string[]).push(input)
     }
   }
   if (rollup_module) (rollup_module.output as OutputOptions[]).push({
-    dir: './dist',
+    dir: dist,
     exports: 'auto',
     format: 'esm',
     chunkFileNames: `[name]-[hash].js`,
     entryFileNames(chunk) {
       let p = normalize_path(relative(process.cwd(), chunk.facadeModuleId!))
-      return p.slice('./src/'.length, -'.ts'.length) + '.js'
+      return p.slice(src.length + 1, -'.ts'.length) + '.js'
     }
   })
   if (rollup_types) (rollup_types.output as OutputOptions[]).push({
-    dir: './dist',
+    dir: dist,
     entryFileNames(chunk) {
       let p = normalize_path(relative(process.cwd(), chunk.facadeModuleId!))
-      return p.slice('./src/'.length, -'.ts'.length) + '.d.ts'
+      return p.slice(src.length + 1, -'.ts'.length) + '.d.ts'
     },
     exports: 'auto',
     format: 'esm',
@@ -146,7 +153,7 @@ const resolve_config = async (options: BuildOptions) => {
   }
 
   if (options._) for (let p of options._) {
-    add_entry(get_output(p))
+    add_entry(get_output(p, options.src, options.dist))
   }
 
   return { version, entry_points, external }
