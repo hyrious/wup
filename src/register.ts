@@ -30,12 +30,16 @@ export async function load(url: string, context: LoadContext, nextLoad: LoadFn):
   return result
 }
 
-function patch(url: string, source: string | ArrayBuffer | Uint8Array): string | ArrayBuffer | Uint8Array {
-  if (!/node_modules[\\/]rollup-plugin-dts/.test(url)) return source
+function decode(source: string | ArrayBuffer | Uint8Array): string {
   if (source instanceof Uint8Array || source instanceof ArrayBuffer) source = new TextDecoder().decode(source)
+  return source
+}
 
-  source = source.replaceAll('ts.createCompilerHost(', 'createCompilerHost(')
-  source += `
+function patch(url: string, source: string | ArrayBuffer | Uint8Array): string | ArrayBuffer | Uint8Array {
+  if (/node_modules[\\/]rollup-plugin-dts/.test(url)) {
+    source = decode(source)
+    source = source.replaceAll('ts.createCompilerHost(', 'createCompilerHost(')
+    source += `
 /** --- patched by @hyrious/wup --- */
 function createCompilerHost(compilerOptions, setParentNodes = false) {
   const host = ts.createCompilerHost(compilerOptions, setParentNodes);
@@ -46,10 +50,20 @@ function readAndMangleComments(name) {
   let file = ts.sys.readFile(name);
   if (file && !name.includes('node_modules'))
     file = file.replace(/(?<=^|\\n)(?:([ \\t]*)\\/\\/\\/.*\\n)+/g, (comment, space) => {
+      if (comment.indexOf("\\n") + 1 === comment.length) {
+        return \`\${space}/** \${comment.slice(space.length).replace(/\\/\\/\\/ ?/g, "").trimEnd()} */\\n\`;
+      }
       return \`\${space}/**\\n\${space}\${comment.slice(space.length).replace(/\\/\\/\\/ ?/g, " * ")}\${space} */\\n\`;
     });
   return file;
 }
 `
+  }
+
+  else if (/node_modules[\\/]typescript/.test(url)) {
+    source = decode(source)
+    source = source.replace('indentStrings = ["", "    "];', 'indentStrings = ["", "  "];')
+  }
+
   return source
 }
