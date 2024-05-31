@@ -18,6 +18,10 @@ interface LoadResult {
 }
 
 export async function load(url: string, context: LoadContext, nextLoad: LoadFn): Promise<LoadResult> {
+  if (!/node_modules[\\/]rollup-plugin-dts/.test(url)) {
+    return nextLoad(url, context)
+  }
+
   const result = await nextLoad(url, context)
   if (result.format === 'commonjs') {
     result.source ??= await readFile(new URL(result.responseURL ?? url), 'utf8')
@@ -59,11 +63,5 @@ function readAndMangleComments(name) {
 }
 `
   }
-
-  else if (/node_modules[\\/]typescript/.test(url)) {
-    source = decode(source)
-    source = source.replace('indentStrings = ["", "    "];', 'indentStrings = ["", "  "];')
-  }
-
   return source
 }

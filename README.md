@@ -4,7 +4,6 @@ Build TypeScript libraries.
 
 Assumes your projects are set up like this:
 
-- ESM only, your package.json has `"type": "module"`.
 - TypeScript sources in an `src` directroy, will be compiled to `dist`.
 - Doc comments with leading `///` syntax will be converted to `/**` JSDoc comments.
 
@@ -14,7 +13,9 @@ Requires Node.js &ge; 20.8.0 to use `module.register()` to patch dependencies at
 > Currently experimental. To test it locally, run
 > ```sh
 > npm run test:install
-> # To uninstall,
+> ```
+> To uninstall,
+> ```sh
 > npm r -g @hyrious/wup
 > ```
 
@@ -30,8 +31,8 @@ npx @hyrious/wup
 
 ## Credits
 
-- [@marijnh/buildtool](https://github.com/marijnh/buildtool)
 - [pkgroll](https://github.com/privatenumber/pkgroll)
+- [@marijnh/buildtool](https://github.com/marijnh/buildtool)
 - [eslint-ts-patch](https://github.com/antfu/eslint-ts-patch) for the way to [patch](https://github.com/antfu/eslint-ts-patch/blob/main/lib/register.js) a library at runtime.
 
 ## License
