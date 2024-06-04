@@ -12,7 +12,10 @@ sade('@hyrious/wup')
    .action(async function patch_and_build(args) {
       if (__VERSION__) register('./register.js', import.meta.url)
       const { build } = await import('./index.js')
-      return build(args)
+      console.info('Building...')
+      const t0 = Date.now()
+      await build(args)
+      console.info(`Done in ${((Date.now() - t0) / 1000).toFixed(2)}s`)
    })
 
    .parse(process.argv)
