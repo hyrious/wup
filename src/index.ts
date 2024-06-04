@@ -96,7 +96,7 @@ const resolve_config = async (options: BuildOptions, src: string, dist: string) 
     }
   }
 
-  let entries: Record<string, EntryPoint> = Object.create(null)
+  let entries: Record<string, EntryPoint> = { __proto__: null } as any
 
   const add_entry = (entry: EntryPoint) => {
     entry.out = normalize(entry.out)
