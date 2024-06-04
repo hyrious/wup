@@ -3,7 +3,7 @@ import { readFile, rm } from 'node:fs/promises'
 import { builtinModules } from 'node:module'
 import { basename, extname, isAbsolute } from 'node:path'
 import { join } from 'path/posix'
-import { rollup, type OutputChunk, type OutputOptions, type Plugin, type PreRenderedChunk, type RollupOptions } from 'rollup'
+import { rollup, type OutputChunk, type OutputOptions, type Plugin, type PreRenderedChunk, type RollupError, type RollupOptions } from 'rollup'
 import MagicString from 'magic-string'
 import nodeResolve from '@rollup/plugin-node-resolve'
 import json from '@rollup/plugin-json'
@@ -39,6 +39,15 @@ interface EntryPoint {
 }
 
 export const build = async (options: BuildOptions = {}) => {
+  const on_error = (error: RollupError) => {
+    process.removeListener('uncaughtException', on_error)
+    console.error('' + error)
+    if (error && error.frame) {
+      console.error(error.frame)
+    }
+  }
+  process.on('uncaughtException', on_error);
+
   const src = normalize(options.src || './src')
   const dist = normalize(options.dist || './dist')
   const config = await resolve_config(options, src, dist)
@@ -48,14 +57,14 @@ export const build = async (options: BuildOptions = {}) => {
     await rm(p + '.map', { force: true })
   }
 
+  const tasks: Promise<any>[] = []
   for (const get_config of [get_config_for_module, get_config_for_types]) {
     for (const conf of await get_config(config)) {
-      let bundle = await rollup(conf)
-      for (let option of conf.output) {
-        await bundle.write(option)
-      }
+      tasks.push(rollup(conf).then(bundle => Promise.all(conf.output.map(option => bundle.write(option)))))
     }
   }
+
+  await Promise.all(tasks)
 }
 
 type ResolvedConfig = Awaited<ReturnType<typeof resolve_config>>
