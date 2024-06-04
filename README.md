@@ -24,7 +24,7 @@ Requires Node.js &ge; 20.8.0 to use `module.register()` to patch dependencies at
 ```sh
 mkdir awesome-library && cd awesome-library
 npm create @hyrious -- --cli --public
-npx @hyrious/license mit
+npx @hyrious/license mit 2>&1 | tail
 npm install
 npx @hyrious/wup
 ```
